@@ -3,6 +3,7 @@ name = "abstract_integers"
 version = "0.1.0"
 authors = ["Denis Merigoux <denis.merigoux@gmail.com>"]
 edition = "2018"
+license = "Apache-2.0"
 
 [dependencies]
 num = "0.2"
