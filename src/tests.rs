@@ -15,7 +15,7 @@ fn wrapping() {
     assert_eq!(BigUint::from(63u32), x6.into());
 }
 
-define_abstract_integer_bounded!(SmallBounded, 2, BigUint::from(0xFFFFu16));
+define_abstract_integer_checked!(SmallBounded, 2, BigUint::from(0xFFFFu16));
 
 #[test]
 #[should_panic]
@@ -25,7 +25,7 @@ fn bounded() {
     let _y3 = y1 + y2;
 }
 
-define_abstract_integer_bounded!(Felem, 40, BigUint::from(1u32).shl(255) - BigUint::from(19u32));
+define_abstract_integer_checked!(Felem, 40, BigUint::from(1u32).shl(255) - BigUint::from(19u32));
 
 #[test]
 fn arith() {
