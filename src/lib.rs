@@ -3,107 +3,107 @@ use num::BigUint;
 use std::ops::*;
 
 macro_rules! define_abstract_integer_bounded_operations {
-    ($name:ident, $bits:literal) => {
-        impl Add for &$name {
+    ($name:ident, $bytes:literal) => {
+        impl Add for $name {
             type Output = $name;
-            fn add(self, rhs: &$name) -> $name {
-                let c = self.0.clone() + rhs.0.clone();
-                if c > $name::max().0 {
+            fn add(self, rhs: $name) -> $name {
+                let a: BigUint = self.into();
+                let b: BigUint = rhs.into();
+                let c = a + b;
+                if c > $name::max() {
                     panic!("bounded addition overflow for type {}", stringify!($name));
                 }
-                $name(c)
+                c.into()
             }
         }
     };
 }
 
 macro_rules! define_abstract_integer_modular_operations {
-    ($name:ident, $bits:literal) => {
-        impl Add for &$name {
+    ($name:ident, $bytes:literal) => {
+        impl Add for $name {
             type Output = $name;
-            fn add(self, rhs: &$name) -> $name {
-                let c = (self.0.clone() + rhs.0.clone()) % $name::max().0;
-                if c > $name::max().0 {
-                    panic!("bounded addition overflow for type {}", stringify!($name));
-                }
-                $name(c)
+            fn add(self, rhs: $name) -> $name {
+                let a: BigUint = self.into();
+                let b: BigUint = rhs.into();
+                let c: BigUint = a + b;
+                let d: BigUint = c % $name::max();
+                d.into()
             }
         }
     };
 }
 
 macro_rules! define_abstract_integer_common_operations {
-    ($name:ident, $bits:literal) => {};
+    ($name:ident, $bytes:literal) => {};
 }
 
 macro_rules! define_abstract_integer_struct {
-    ($name:ident, $bits:literal) => {
+    ($name:ident, $bytes:literal, $max:expr) => {
         /// Little endian byte representation of the integer
-        #[derive(Debug)]
-        pub struct $name(BigUint);
+        #[derive(Clone, Copy)]
+        pub struct $name([u8; $bytes]);
+
+        impl From<BigUint> for $name {
+            fn from(x: BigUint) -> $name {
+                let repr = x.to_bytes_be();
+                if repr.len() > $bytes {
+                    panic!("BigUint too big for type {}", stringify!($name))
+                }
+                let mut out = [0u8; $bytes];
+                let upper = out.len();
+                let lower = upper - repr.len();
+                out[lower..upper].copy_from_slice(&repr);
+                $name(out)
+            }
+        }
+
+        impl Into<BigUint> for $name {
+            fn into(self) -> BigUint {
+                BigUint::from_bytes_be(&self.0)
+            }
+        }
+
+        impl std::fmt::Display for $name {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                   let uint : BigUint = (*self).into();
+                    write!(f, "{}", uint)
+                }
+        }
+
+        impl $name {
+            fn max() -> BigUint {
+                $max
+            }
+
+            #[allow(dead_code)]
+            pub fn from_literal(x: u128) -> Self {
+                let big_x = BigUint::from(x);
+                if big_x > $name::max().into() {
+                    panic!("literal too big for type {}", stringify!($name));
+                }
+                big_x.into()
+            }
+        }
     };
 }
 
+#[macro_export]
 macro_rules! define_abstract_integer_modular {
-    ($name:ident, $bits:literal, $max:expr) => {
-        define_abstract_integer_struct!($name, $bits);
-
-        impl $name {
-            fn max() -> Self {
-                $name($max)
-            }
-
-            pub fn from_literal(x: u128) -> Self {
-                let big_x = BigUint::from(x);
-                if big_x > $name::max().0 {
-                    panic!("literal too big for type {}", stringify!($name));
-                }
-                $name(big_x)
-            }
-        }
-
-        define_abstract_integer_common_operations!($name, $bits);
-        define_abstract_integer_modular_operations!($name, $bits);
-    }
-}
-
-macro_rules! define_abstract_integer_bounded {
-    ($name:ident, $bits:literal, $max:expr) => {
-        define_abstract_integer_struct!($name, $bits);
-
-        impl $name {
-            fn max() -> Self {
-                $name($max)
-            }
-
-            pub fn from_literal(x: u128) -> Self {
-                let big_x = BigUint::from(x);
-                if big_x > $name::max().0 {
-                    panic!("literal too big for type {}", stringify!($name));
-                }
-                $name(big_x)
-            }
-        }
-
-        define_abstract_integer_common_operations!($name, $bits);
-        define_abstract_integer_bounded_operations!($name, $bits);
+    ($name:ident, $bytes:literal, $max:expr) => {
+        define_abstract_integer_struct!($name, $bytes, $max);
+        define_abstract_integer_common_operations!($name, $bytes);
+        define_abstract_integer_modular_operations!($name, $bytes);
     };
 }
 
-define_abstract_integer_modular!(Felem, 19, BigUint::from(255u32));
-define_abstract_integer_bounded!(FelemRepr, 16, BigUint::from(0xFFFFu16));
-
-#[test]
-fn wrapping() {
-    let x1 = &Felem::from_literal(254);
-    let x2 = &Felem::from_literal(3);
-    let _x3 = x1 + x2;
+#[macro_export]
+macro_rules! define_abstract_integer_bounded {
+    ($name:ident, $bytes:literal, $max:expr) => {
+        define_abstract_integer_struct!($name, $bytes, $max);
+        define_abstract_integer_common_operations!($name, $bytes);
+        define_abstract_integer_bounded_operations!($name, $bytes);
+    };
 }
 
-#[test]
-#[should_panic]
-fn bounded() {
-    let y1 = &FelemRepr::from_literal(65530);
-    let y2 = &FelemRepr::from_literal(6);
-    let _y3 = y1 + y2;
-}
+mod tests;
