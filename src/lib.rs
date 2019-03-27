@@ -9,7 +9,10 @@
 //!
 //! Here is the macro used to defined the `SizeNatExample` type of this crate:
 //!
-//! ```ignore
+//! ```
+//! #[macro_use] extern crate abstract_integers;
+//! use num::{BigUint, CheckedSub, Num, Zero};
+//! use std::ops::*;
 //! define_abstract_integer_checked!(SizeNatExample, 64);
 //! ```
 //!
@@ -27,7 +30,11 @@
 //! implement modular arithmetic. For instance, this crate defines the arithmetic field over the
 //! 9th Mersenne prime with:
 //!
-//! ```ignore
+//! ```
+//! #[macro_use] extern crate abstract_integers;
+//! use num::{BigUint, CheckedSub, Num, Zero};
+//! use std::ops::*;
+//! use abstract_integers::*;
 //! define_refined_modular_integer!(
 //!    SizeNatFieldExample,
 //!    SizeNatExample,
@@ -43,8 +50,7 @@
 //! # Example
 //!
 //! ```
-//! # use num::BigUint;
-//! # use abstract_integers::*;
+//! use abstract_integers::*;
 //! let x1 = SizeNatExample::from_literal(687165654266415);
 //! let x2 = SizeNatExample::from_literal(4298832000156);
 //! let x3 = x1 + x2;
@@ -344,13 +350,21 @@ macro_rules! define_refined_modular_integer {
     };
 }
 
+/// Defines a bounded natural integer with modular arithmetic operations.
+/// The modulus is given by its numbers of bits.
+#[macro_export]
+macro_rules! define_refined_modular_machine_integer {
+    ($name:ident, $base:ident, $bits:expr) => {
+        define_refined_modular_integer!(
+            $name,
+            $base,
+            SizeNatExample::pow2($bits) - SizeNatExample::from_literal(1)
+        );
+    };
+}
+
 /// Natural integer bounded by std::usize::MAX
 define_abstract_integer_checked!(SizeNatExample, 64);
-
-define_refined_modular_integer!(
-    SizeNatFieldExample,
-    SizeNatExample,
-    SizeNatExample::pow2(61) - SizeNatExample::from_literal(1)
-);
+define_refined_modular_machine_integer!(SizeNatFieldExample, SizeNatExample, 61);
 
 mod tests;
