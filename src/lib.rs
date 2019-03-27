@@ -61,7 +61,7 @@
 
 extern crate num;
 #[allow(unused_imports)]
-use num::{BigUint, CheckedSub, Zero, Num};
+use num::{BigUint, CheckedSub, Num, Zero};
 use std::ops::*;
 
 /// Defines a bounded natural integer with regular arithmetic operations, checked for overflow
@@ -122,11 +122,8 @@ macro_rules! define_abstract_integer_checked {
 
             #[allow(dead_code)]
             pub fn from_hex(x: &str) -> Self {
-                let big_x = BigUint::from_str_radix(x, 16).unwrap_or_else(|_| {
-                    panic!(
-                        "string is not a valid hex number {}", x
-                    )
-                });
+                let big_x = BigUint::from_str_radix(x, 16)
+                    .unwrap_or_else(|_| panic!("string is not a valid hex number {}", x));
                 if big_x > $name::max().into() {
                     panic!("literal too big for type {}", stringify!($name));
                 }

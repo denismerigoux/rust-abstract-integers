@@ -11,7 +11,11 @@ fn bounded() {
     let _y3 = y1 + y2;
 }
 
-define_refined_modular_integer!(Felem, BigBounded, BigBounded::pow2(255) - BigBounded::from_literal(19));
+define_refined_modular_integer!(
+    Felem,
+    BigBounded,
+    BigBounded::pow2(255) - BigBounded::from_literal(19)
+);
 
 #[test]
 fn arith() {
@@ -24,7 +28,6 @@ fn arith() {
     let x2 = BiggerBounded::from_hex("09871425437538592414723");
     let x3 = x1 + x2;
     assert_eq!(BiggerBounded::from_hex("98818bd7bcc41714849857"), x3.into());
-
 
     let x1 = Felem::from_literal(24875808327634644);
     let x2 = Felem::from_literal(91987276365379830);
