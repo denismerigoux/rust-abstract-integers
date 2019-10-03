@@ -175,7 +175,7 @@ macro_rules! define_abstract_integer_checked {
                 let b: BigUint = rhs.into();
                 let c = a * b;
                 if c > $name::max() {
-                    panic!("bounded addition overflow for type {}", stringify!($name));
+                    panic!("bounded multiplication overflow for type {}", stringify!($name));
                 }
                 c.into()
             }
@@ -277,6 +277,23 @@ macro_rules! define_refined_modular_integer {
                 }
                 $name(big_x.into())
             }
+
+            /// Returns 2 to the power of the argument
+            #[allow(dead_code)]
+            pub fn pow2(x: usize) -> Self {
+                $name(BigUint::from(1u32).shl(x).into())
+            }
+
+            #[allow(dead_code)]
+            pub fn from_hex(x: &str) -> Self {
+                $name($base::from_hex(x))
+            }
+
+            #[allow(dead_code)]
+            pub fn to_bytes_le(&self) -> Vec<u8> {
+                let tmp: BigUint = self.0.into();
+                tmp.to_bytes_le()
+            }
         }
 
         impl From<$base> for $name {
@@ -363,7 +380,7 @@ macro_rules! define_refined_modular_machine_integer {
     };
 }
 
-/// Natural integer bounded by std::usize::MAX
+// Natural integer bounded by std::usize::MAX
 define_abstract_integer_checked!(SizeNatExample, 64);
 define_refined_modular_machine_integer!(SizeNatFieldExample, SizeNatExample, 61);
 

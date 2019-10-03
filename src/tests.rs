@@ -16,6 +16,13 @@ define_refined_modular_integer!(
     BigBounded::pow2(255) - BigBounded::from_literal(19)
 );
 
+define_abstract_integer_checked!(BiggerBounded, 512);
+define_refined_modular_integer!(
+    Felem2,
+    BiggerBounded,
+    BiggerBounded::pow2(255) - BiggerBounded::from_literal(19)
+);
+
 #[test]
 fn arith() {
     let x1 = BigBounded::from_literal(24875808327634644);
@@ -31,7 +38,11 @@ fn arith() {
     let x1 = Felem::from_literal(24875808327634644);
     let x2 = Felem::from_literal(91987276365379830);
     let x3 = x1 + x2;
-    assert_eq!(Felem::from_literal(116863084693014474u128), x3.into())
+    assert_eq!(Felem::from_literal(116863084693014474u128), x3.into());
+
+    let x1 = Felem2::from_hex("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffce");
+    let x2 = Felem2::from_literal(3);
+    let _x3 = x1 * x2;
 }
 
 define_refined_modular_integer!(SmallModular, BigBounded, BigBounded::from_literal(255));
