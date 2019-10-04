@@ -9,5 +9,12 @@ keywords = ["integers", "specification"]
 license = "Apache-2.0"
 readme = "README.md"
 
+[lib]
+name = "uint"
+path = "src/uint.rs"
+proc-macro = true
+
 [dependencies]
 num = "0.2"
+syn = "0.14"
+quote = "0.6"
