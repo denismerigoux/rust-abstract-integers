@@ -7,7 +7,7 @@ use syn::*;
 
 #[proc_macro_attribute]
 pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
-    let item_ast: DeriveInput = parse(item.clone()).unwrap();
+    let item_ast: DeriveInput = parse(item.clone()).unwrap(); // TODO: make safe
     let struct_name = &item_ast.ident;
     let mod_str = attr.into_iter().next().unwrap().to_string(); // TODO: make safe
     let mod_str_len = mod_str.len();
@@ -15,11 +15,6 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
     let bytes = (bits + 7) / 8;
 
     let new_item = quote! {
-        extern crate num;
-        #[allow(unused_imports)]
-        use num::{BigUint, CheckedSub, Num, Zero};
-        use std::ops::*;
-
         #[derive(Clone, Copy)]
         struct #struct_name {
             b: [u8; #bytes]
