@@ -82,6 +82,18 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
             }
         }
 
+        impl From<u128> for #struct_name {
+            fn from(x: u128) -> #struct_name {
+                #struct_name::from_literal(x)
+            }
+        }
+
+        impl From<&str> for #struct_name {
+            fn from(x: &str) -> #struct_name {
+                #struct_name::from_hex(x)
+            }
+        }
+
         impl Into<BigUint> for #struct_name {
             fn into(self) -> BigUint {
                 BigUint::from_bytes_be(&self.b)
