@@ -4,7 +4,7 @@ use uint::field;
 
 // TODO: These imports should go somewhere else.
 extern crate num;
-use num::{BigUint, Num};
+use num::{BigUint, Num, Zero};
 use std::ops::*;
 
 #[test]

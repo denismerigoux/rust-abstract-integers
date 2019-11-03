@@ -31,9 +31,18 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
                 BigUint::from(2u32).shl(#bits)
             }
 
-            fn mod_val(&self) -> BigUint {
+            fn mod_val() -> BigUint {
                 // TODO: make safe
                 BigUint::from_str_radix(#mod_str, 16).unwrap()
+            }
+
+            pub fn raw(&self) -> [u8; #bytes] {
+                self.b
+            }
+
+            pub fn bit(&self, i: usize) -> u8 {
+                let tmp: BigUint = (*self >> i).into();
+                (tmp & BigUint::from(1u128)).to_bytes_le()[0]
             }
 
             #[allow(dead_code)]
@@ -62,9 +71,32 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
                 BigUint::from(1u32).shl(x).into()
             }
 
+            /// Returns self to the power of the argument
+            #[allow(dead_code)]
+            pub fn pow(&self, exp: &#struct_name) -> #struct_name {
+                let a: BigUint = (*self).into();
+                let b: BigUint = (*exp).into();
+                let m: BigUint = #struct_name::mod_val().into();
+                let c: BigUint = a.modpow(&b, &m);
+                c.into()
+            }
+
+            /// Returns self^-1
+            #[allow(dead_code)]
+            pub fn inv(&self) -> #struct_name {
+                let m = #struct_name::mod_val()-BigUint::from(2u32);
+                let s: BigUint = (*self).into();
+                s.modpow(&m, &#struct_name::mod_val()).into()
+            }
+
             #[allow(dead_code)]
             pub fn to_bytes_le(&self) -> Vec<u8> {
                 BigUint::from_bytes_be(&self.b).to_bytes_le()
+            }
+
+            #[allow(dead_code)]
+            pub fn from_bytes_le(v: &[u8]) -> #struct_name {
+                BigUint::from_bytes_le(v).into()
             }
         }
 
@@ -145,7 +177,7 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
                 let a: BigUint = self.into();
                 let b: BigUint = rhs.into();
                 let c: BigUint = a + b;
-                let d: BigUint = c % self.mod_val();
+                let d: BigUint = c % #struct_name::mod_val();
                 d.into()
             }
         }
@@ -156,7 +188,11 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
             fn sub(self, rhs: #struct_name) -> #struct_name {
                 let a: BigUint = self.into();
                 let b: BigUint = rhs.into();
-                let c: BigUint = if b > a { self.mod_val() - b + a } else { b - a };
+                let c: BigUint = if b > a { // TODO: bug in BigUint?
+                    #struct_name::mod_val() - b + a
+                } else {
+                    a - b
+                };
                 c.into()
             }
         }
@@ -168,7 +204,7 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
                 let a: BigUint = self.into();
                 let b: BigUint = rhs.into();
                 let c: BigUint = a * b;
-                let d: BigUint = c % self.mod_val();
+                let d: BigUint = c % #struct_name::mod_val();
                 d.into()
             }
         }
@@ -192,6 +228,22 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
                 let b: BigUint = rhs.into();
                 let c: BigUint = a % b;
                 c.into()
+            }
+        }
+
+        impl Shr<usize> for #struct_name {
+            type Output = #struct_name;
+            fn shr(self, rhs: usize) -> #struct_name {
+                let a: BigUint = self.into();
+                let a = a >> rhs;
+                a.into()
+            }
+        }
+
+        impl Index<usize> for #struct_name {
+            type Output = u8;
+            fn index(&self, i: usize) -> &u8 {
+                &self.b[i]
             }
         }
     };
