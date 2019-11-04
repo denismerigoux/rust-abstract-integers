@@ -102,6 +102,7 @@ pub fn field(attr: TokenStream, item: TokenStream) -> proc_macro::TokenStream {
 
         impl From<BigUint> for #struct_name {
             fn from(x: BigUint) -> #struct_name {
+                let x = x % #struct_name::mod_val();
                 let repr = x.to_bytes_be();
                 if repr.len() > #bytes {
                     panic!("BigUint too big for type {}", stringify!(#struct_name))
