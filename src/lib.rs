@@ -62,6 +62,7 @@
 extern crate num;
 #[allow(unused_imports)]
 use num::{BigUint, CheckedSub, Zero};
+use std::num::ParseIntError;
 use std::ops::*;
 
 /// Defines a bounded natural integer with regular arithmetic operations, checked for overflow
@@ -111,13 +112,36 @@ macro_rules! define_abstract_integer_checked {
                 BigUint::from(2u32).shl($bits)
             }
 
-            #[allow(dead_code)]
             pub fn from_literal(x: u128) -> Self {
                 let big_x = BigUint::from(x);
                 if big_x > $name::max().into() {
                     panic!("literal too big for type {}", stringify!($name));
                 }
                 big_x.into()
+            }
+
+            fn hex_string_to_bytes(s: &str) -> Vec<u8> {
+                assert!(s.len() % 2 == 0);
+                let b: Result<Vec<u8>, ParseIntError> = (0..s.len())
+                    .step_by(2)
+                    .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
+                    .collect();
+                b.expect("Error parsing hex string")
+            }
+
+            #[allow(dead_code)]
+            pub fn from_hex(s: &str) -> Self {
+                BigUint::from_bytes_be(&Self::hex_string_to_bytes(s)).into()
+            }
+
+            #[allow(dead_code)]
+            pub fn from_bytes_le(v: &[u8]) -> Self {
+                BigUint::from_bytes_le(v).into()
+            }
+
+            #[allow(dead_code)]
+            pub fn to_bytes_le(self) -> Vec<u8> {
+                BigUint::to_bytes_le(&self.into())
             }
         }
 
@@ -159,7 +183,10 @@ macro_rules! define_abstract_integer_checked {
                 let b: BigUint = rhs.into();
                 let c = a * b;
                 if c > $name::max() {
-                    panic!("bounded addition overflow for type {}", stringify!($name));
+                    panic!(
+                        "bounded multiplication overflow for type {}",
+                        stringify!($name)
+                    );
                 }
                 c.into()
             }
@@ -223,6 +250,45 @@ macro_rules! define_abstract_integer_checked {
             pub fn pow2(x: usize) -> $name {
                 BigUint::from(1u32).shl(x).into()
             }
+
+            /// Gets the `i`-th least significant bit of this integer.
+            #[allow(dead_code)]
+            pub fn bit(self, i: usize) -> bool {
+                assert!(
+                    i < self.0.len() * 8,
+                    "the bit queried should be lower than the size of the integer representation: {} < {}",
+                    i,
+                    self.0.len() * 8
+                );
+                if i >= $bits { return false };
+                let byte_index = ($bits - 1 - i) / 8;
+                let byte = self.0[byte_index];
+                let index_in_byte = i % 8;
+                (byte >> index_in_byte) & 1u8 == 1u8
+            }
+
+            #[allow(dead_code)]
+            pub fn inv(self, modval: Self) -> Self {
+                let biguintmodval : BigUint = modval.into();
+                let m = &biguintmodval - BigUint::from(2u32);
+                let s: BigUint = (self).into();
+                s.modpow(&m, &biguintmodval).into()
+            }
+
+            #[allow(dead_code)]
+            pub fn pow_felem(self, exp: Self, modval: Self) -> Self {
+                let a: BigUint = self.into();
+                let b: BigUint = exp.into();
+                let m: BigUint = modval.into();
+                let c: BigUint = a.modpow(&b, &m);
+                c.into()
+            }
+            /// Returns self to the power of the argument.
+            /// The exponent is a u128.
+            #[allow(dead_code)]
+            pub fn pow(self, exp: u128, modval: Self) -> Self {
+                self.pow_felem(BigUint::from(exp).into(), modval)
+            }
         }
     };
 }
@@ -249,7 +315,7 @@ macro_rules! define_refined_modular_integer {
         }
 
         impl $name {
-            fn max() -> $base {
+            pub fn max() -> $base {
                 $max
             }
 
@@ -260,6 +326,40 @@ macro_rules! define_refined_modular_integer {
                     panic!("literal too big for type {}", stringify!($name));
                 }
                 $name(big_x.into())
+            }
+
+            #[allow(dead_code)]
+            pub fn from_hex(s: &str) -> Self {
+                $base::from_hex(s).into()
+            }
+
+            #[allow(dead_code)]
+            pub fn inv(self) -> Self {
+                let base : $base = self.into();
+                base.inv(Self::max()).into()
+            }
+
+            #[allow(dead_code)]
+            pub fn pow_felem(self, exp: Self) -> Self {
+                let base : $base = self.into();
+                base.pow_felem(exp.into(), Self::max()).into()
+            }
+            /// Returns self to the power of the argument.
+            /// The exponent is a u128.
+            #[allow(dead_code)]
+            pub fn pow(self, exp: u128) -> Self {
+                let base : $base = self.into();
+                base.pow(exp, Self::max()).into()
+            }
+
+            #[allow(dead_code)]
+            pub fn from_bytes_le(v: &[u8]) -> Self {
+                $base::from_bytes_le(v).into()
+            }
+
+            #[allow(dead_code)]
+            pub fn to_bytes_le(self) -> Vec<u8> {
+                $base::to_bytes_le(self.into())
             }
         }
 
@@ -293,7 +393,8 @@ macro_rules! define_refined_modular_integer {
             fn sub(self, rhs: $name) -> $name {
                 let a: $base = self.into();
                 let b: $base = rhs.into();
-                let c: $base = if b > a { $max - b + a } else { b - a };
+
+                let c: $base = if b > a { $max - b + a } else { a - b };
                 c.into()
             }
         }
@@ -334,7 +435,7 @@ macro_rules! define_refined_modular_integer {
     };
 }
 
-/// Natural integer bounded by std::usize::MAX
+// Natural integer bounded by std::usize::MAX
 define_abstract_integer_checked!(SizeNatExample, 64);
 
 define_refined_modular_integer!(
