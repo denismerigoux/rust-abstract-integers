@@ -77,7 +77,7 @@ macro_rules! define_abstract_integer_checked {
             fn from(x: BigUint) -> $name {
                 let repr = x.to_bytes_be();
                 if repr.len() > ($bits + 7) / 8 {
-                    panic!("BigUint too big for type {}", stringify!($name))
+                    panic!("BigUint {} too big for type {}", x, stringify!($name))
                 }
                 let mut out = [0u8; ($bits + 7) / 8];
                 let upper = out.len();
@@ -115,13 +115,13 @@ macro_rules! define_abstract_integer_checked {
             pub fn from_literal(x: u128) -> Self {
                 let big_x = BigUint::from(x);
                 if big_x > $name::max().into() {
-                    panic!("literal too big for type {}", stringify!($name));
+                    panic!("literal {} too big for type {}", x, stringify!($name));
                 }
                 big_x.into()
             }
 
             fn hex_string_to_bytes(s: &str) -> Vec<u8> {
-                assert!(s.len() % 2 == 0);
+                assert!(s.len() % 2 == 0, "length of hex string {}: {}",s, s.len());
                 let b: Result<Vec<u8>, ParseIntError> = (0..s.len())
                     .step_by(2)
                     .map(|i| u8::from_str_radix(&s[i..i + 2], 16))
@@ -323,7 +323,7 @@ macro_rules! define_refined_modular_integer {
             pub fn from_literal(x: u128) -> Self {
                 let big_x = BigUint::from(x);
                 if big_x > $name::max().into() {
-                    panic!("literal too big for type {}", stringify!($name));
+                    panic!("literal {} too big for type {}", x, stringify!($name));
                 }
                 $name(big_x.into())
             }
@@ -335,20 +335,20 @@ macro_rules! define_refined_modular_integer {
 
             #[allow(dead_code)]
             pub fn inv(self) -> Self {
-                let base : $base = self.into();
+                let base: $base = self.into();
                 base.inv(Self::max()).into()
             }
 
             #[allow(dead_code)]
             pub fn pow_felem(self, exp: Self) -> Self {
-                let base : $base = self.into();
+                let base: $base = self.into();
                 base.pow_felem(exp.into(), Self::max()).into()
             }
             /// Returns self to the power of the argument.
             /// The exponent is a u128.
             #[allow(dead_code)]
             pub fn pow(self, exp: u128) -> Self {
-                let base : $base = self.into();
+                let base: $base = self.into();
                 base.pow(exp, Self::max()).into()
             }
 
