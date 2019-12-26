@@ -75,6 +75,8 @@ macro_rules! define_abstract_integer_checked {
 
         impl From<BigUint> for $name {
             fn from(x: BigUint) -> $name {
+                let max_value = BigUint::from(1u32) <<  $bits;
+                assert!(x < max_value, "BigUint {} is too big x for type {}!", x, stringify!($name));
                 let repr = x.to_bytes_be();
                 if repr.len() > ($bits + 7) / 8 {
                     panic!("BigUint {} too big for type {}", x, stringify!($name))
@@ -260,11 +262,9 @@ macro_rules! define_abstract_integer_checked {
                     i,
                     self.0.len() * 8
                 );
-                if i >= $bits { return false };
-                let byte_index = ($bits - 1 - i) / 8;
-                let byte = self.0[byte_index];
-                let index_in_byte = i % 8;
-                (byte >> index_in_byte) & 1u8 == 1u8
+                let bigint : BigUint = self.into();
+                let tmp: BigUint = bigint >> i;
+                (tmp & BigUint::from(1u128)).to_bytes_le()[0] == 1
             }
 
             #[allow(dead_code)]
@@ -361,11 +361,17 @@ macro_rules! define_refined_modular_integer {
             pub fn to_bytes_le(self) -> Vec<u8> {
                 $base::to_bytes_le(self.into())
             }
+
+            /// Gets the `i`-th least significant bit of this integer.
+            #[allow(dead_code)]
+            pub fn bit(self, i: usize) -> bool {
+                $base::bit(self.into(), i)
+            }
         }
 
         impl From<$base> for $name {
             fn from(x: $base) -> $name {
-                $name(x)
+                $name(x % $max)
             }
         }
 
