@@ -34,3 +34,19 @@ fn wrapping() {
     let x6 = x5 / SmallModular::from_literal(4);
     assert_eq!(SmallModular::from_literal(63), x6.into());
 }
+
+define_abstract_integer_checked!(Scalar, 512);
+
+define_refined_modular_integer!(
+    FieldElement,
+    Scalar,
+    Scalar::pow2(256) - Scalar::pow2(224) + Scalar::pow2(192) + Scalar::pow2(96) - Scalar::from_literal(1)
+);
+
+#[test]
+fn conversion() {
+    let x = FieldElement::from_hex("6B17D1F2E12C4247F8BCE6E563A440F277037D812DEB33A0F4A13945D898C296");
+    let y = FieldElement::from_hex("4FE342E2FE1A7F9B8EE7EB4A7C0F9E162BCE33576B315ECECBB6406837BF51F5");
+    let _z = x * y;
+    ()
+}
