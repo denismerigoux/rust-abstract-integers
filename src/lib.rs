@@ -281,8 +281,12 @@ macro_rules! define_refined_modular_integer {
             fn add(self, rhs: $name) -> $name {
                 let a: $base = self.into();
                 let b: $base = rhs.into();
-                let c: $base = a + b;
-                let d: $base = c % $max;
+                let a: BigUint = a.into();
+                let b: BigUint = b.into();
+                let c: BigUint = a + b;
+                let max: BigUint = $max.into();
+                let d: BigUint = c % max;
+                let d: $base = d.into();
                 d.into()
             }
         }
@@ -293,8 +297,13 @@ macro_rules! define_refined_modular_integer {
             fn sub(self, rhs: $name) -> $name {
                 let a: $base = self.into();
                 let b: $base = rhs.into();
-                let c: $base = if b > a { $max - b + a } else { b - a };
-                c.into()
+                let a: BigUint = a.into();
+                let b: BigUint = b.into();
+                let max: BigUint = $max.into();
+                let c: BigUint = if b > a { max.clone() - b + a } else { b - a };
+                let d: BigUint = c % max;
+                let d: $base = d.into();
+                d.into()
             }
         }
 
@@ -304,8 +313,12 @@ macro_rules! define_refined_modular_integer {
             fn mul(self, rhs: $name) -> $name {
                 let a: $base = self.into();
                 let b: $base = rhs.into();
-                let c: $base = a * b;
-                let d: $base = c % $max;
+                let a: BigUint = a.into();
+                let b: BigUint = b.into();
+                let c: BigUint = a * b;
+                let max: BigUint = $max.into();
+                let d: BigUint = c % max;
+                let d: $base = d.into();
                 d.into()
             }
         }
@@ -316,8 +329,13 @@ macro_rules! define_refined_modular_integer {
             fn div(self, rhs: $name) -> $name {
                 let a: $base = self.into();
                 let b: $base = rhs.into();
-                let c: $base = a / b;
-                c.into()
+                let a: BigUint = a.into();
+                let b: BigUint = b.into();
+                let c: BigUint = a / b;
+                let max: BigUint = $max.into();
+                let d: BigUint = c % max;
+                let d: $base = d.into();
+                d.into()
             }
         }
 
@@ -327,14 +345,19 @@ macro_rules! define_refined_modular_integer {
             fn rem(self, rhs: $name) -> $name {
                 let a: $base = self.into();
                 let b: $base = rhs.into();
-                let c: $base = a % b;
-                c.into()
+                let a: BigUint = a.into();
+                let b: BigUint = b.into();
+                let c: BigUint = a % b;
+                let max: BigUint = $max.into();
+                let d: BigUint = c % max;
+                let d: $base = d.into();
+                d.into()
             }
         }
     };
 }
 
-/// Natural integer bounded by std::usize::MAX
+// Natural integer bounded by std::usize::MAX
 define_abstract_integer_checked!(SizeNatExample, 64);
 
 define_refined_modular_integer!(
