@@ -73,6 +73,12 @@ macro_rules! define_abstract_integer_checked {
         #[derive(Clone, Copy)]
         pub struct $name([u8; ($bits + 7) / 8]);
 
+        impl Default for $name {
+            fn default() -> $name {
+                $name([0u8; ($bits + 7) / 8])
+            }
+        }
+
         impl From<BigUint> for $name {
             fn from(x: BigUint) -> $name {
                 let max_value = BigUint::from(1u32) <<  $bits;
@@ -109,17 +115,29 @@ macro_rules! define_abstract_integer_checked {
             }
         }
 
-        impl $name {
-            fn max() -> BigUint {
-                BigUint::from(2u32).shl($bits)
-            }
-
-            pub fn from_literal(x: u128) -> Self {
+        impl Integer<$name> for $name {
+            fn from_literal(x: u128) -> Self {
                 let big_x = BigUint::from(x);
                 if big_x > $name::max().into() {
                     panic!("literal {} too big for type {}", x, stringify!($name));
                 }
                 big_x.into()
+            }
+            fn from_signed_literal(x: i128) -> Self {
+                let big_x = BigUint::from(x as u128);
+                if big_x > $name::max().into() {
+                    panic!("literal {} too big for type {}", x, stringify!($name));
+                }
+                big_x.into()
+            }
+            fn inv(x: Self) -> Self {
+                unimplemented!()
+            }
+        }
+
+        impl $name {
+            fn max() -> BigUint {
+                BigUint::from(2u32).shl($bits)
             }
 
             fn hex_string_to_bytes(s: &str) -> Vec<u8> {
@@ -297,7 +315,7 @@ macro_rules! define_abstract_integer_checked {
 #[macro_export]
 macro_rules! define_refined_modular_integer {
     ($name:ident, $base:ident, $max:expr) => {
-        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
         pub struct $name($base);
 
         impl std::fmt::Display for $name {
@@ -314,18 +332,30 @@ macro_rules! define_refined_modular_integer {
             }
         }
 
-        impl $name {
-            pub fn max() -> $base {
-                $max
-            }
-
+        impl Integer<$name> for $name {
             #[allow(dead_code)]
-            pub fn from_literal(x: u128) -> Self {
+            fn from_literal(x: u128) -> Self {
                 let big_x = BigUint::from(x);
                 if big_x > $name::max().into() {
                     panic!("literal {} too big for type {}", x, stringify!($name));
                 }
                 $name(big_x.into())
+            }
+            fn from_signed_literal(x: i128) -> Self {
+                let big_x = BigUint::from(x as u128);
+                if big_x > $name::max().into() {
+                    panic!("literal {} too big for type {}", x, stringify!($name));
+                }
+                $name(big_x.into())
+            }
+            fn inv(x: Self) -> Self {
+                x.inv()
+            }
+        }
+
+        impl $name {
+            pub fn max() -> $base {
+                $max
             }
 
             #[allow(dead_code)]
@@ -461,6 +491,37 @@ macro_rules! define_refined_modular_integer {
             }
         }
     };
+}
+
+pub trait Integer<T> {
+    fn from_literal(x: u128) -> T;
+    fn from_signed_literal(x: i128) -> T;
+    fn inv(x: T) -> T;
+}
+
+impl Integer<u128> for u128 {
+    fn from_literal(x: u128) -> u128 {
+        x
+    }
+    fn from_signed_literal(x: i128) -> u128 {
+        x as u128
+    }
+    fn inv(x: u128) -> u128 {
+        unimplemented!();
+    }
+}
+
+impl Integer<i128> for i128 {
+    /// **Warning** might be lossy
+    fn from_literal(x: u128) -> i128 {
+        x as i128
+    }
+    fn from_signed_literal(x: i128) -> i128 {
+        x
+    }
+    fn inv(x: i128) -> i128 {
+        unimplemented!();
+    }
 }
 
 // Natural integer bounded by std::usize::MAX
